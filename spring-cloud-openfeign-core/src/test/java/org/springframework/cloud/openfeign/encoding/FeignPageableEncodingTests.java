@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2015 the original author or authors.
+ * Copyright 2013-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.cloud.openfeign.encoding;
+
+import java.util.Optional;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -78,6 +80,14 @@ public class FeignPageableEncodingTests {
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 		assertThat(response.getBody()).isNotNull();
 		assertThat(pageable.getPageSize()).isEqualTo(response.getBody().getSize());
+		assertThat(response.getBody().getPageable().getSort()).hasSize(1);
+		Optional<Sort.Order> optionalOrder = response.getBody().getPageable().getSort()
+				.get().findFirst();
+		if (optionalOrder.isPresent()) {
+			Sort.Order order = optionalOrder.get();
+			assertThat(order.getDirection()).isEqualTo(Sort.Direction.ASC);
+			assertThat(order.getProperty()).isEqualTo("sortProperty");
+		}
 
 	}
 

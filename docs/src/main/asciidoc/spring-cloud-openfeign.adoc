@@ -47,6 +47,9 @@ public interface StoreClient {
     @RequestMapping(method = RequestMethod.GET, value = "/stores")
     List<Store> getStores();
 
+    @RequestMapping(method = RequestMethod.GET, value = "/stores")
+    Page<Store> getStores(Pageable pageable);
+
     @RequestMapping(method = RequestMethod.POST, value = "/stores/{storeId}", consumes = "application/json")
     Store update(@PathVariable("storeId") Long storeId, Store store);
 }
@@ -63,7 +66,7 @@ The load-balancer client above will want to discover the physical addresses
 for the "stores" service. If your application is a Eureka client then
 it will resolve the service in the Eureka service registry. If you
 don't want to use Eureka, you can simply configure a list of servers
-in your external configuration.
+in your external configuration using https://cloud.spring.io/spring-cloud-static/spring-cloud-commons/current/reference/html/#simplediscoveryclient[`SimpleDiscoveryClient`].
 
 [[spring-cloud-feign-overriding-defaults]]
 === Overriding Feign Defaults
@@ -118,7 +121,7 @@ If none of them is in the classpath, the default feign client is used.
 The OkHttpClient and ApacheHttpClient feign clients can be used by setting `feign.okhttp.enabled` or `feign.httpclient.enabled` to `true`, respectively, and having them on the classpath.
 You can customize the HTTP client used by providing a bean of either `org.apache.http.impl.client.CloseableHttpClient` when using Apache or `okhttp3.OkHttpClient` when using OK HTTP.
 
-Spring Cloud Netflix _does not_ provide the following beans by default for feign, but still looks up beans of these types from the application context to create the feign client:
+Spring Cloud OpenFeign _does not_ provide the following beans by default for feign, but still looks up beans of these types from the application context to create the feign client:
 
 * `Logger.Level`
 * `Retryer`
@@ -232,6 +235,29 @@ public interface BarClient {
 }
 ----
 
+It is also possible to configure FeignClient not to inherit beans from the parent context.
+You can do this by overriding the `inheritParentConfiguration()` in a  `FeignClientConfigurer`
+bean to return `false`:
+
+[source,java,indent=0]
+----
+@Configuration
+public class CustomConfiguration{
+
+@Bean
+public FeignClientConfigurer feignClientConfigurer() {
+			return new FeignClientConfigurer() {
+
+				@Override
+				public boolean inheritParentConfiguration() {
+					return false;
+				}
+			};
+
+		}
+}
+----
+
 === Creating Feign Clients Manually
 
 In some cases it might be necessary to customize your Feign Clients in a way that is not
@@ -276,6 +302,9 @@ NOTE: `PROD-SVC` is the name of the service the Clients will be making requests 
 NOTE: The Feign `Contract` object defines what annotations and values are valid on interfaces. The
 autowired `Contract` bean provides supports for SpringMVC annotations, instead of
 the default Feign native annotations.
+
+You can also use the `Builder`to configure FeignClient not to inherit beans from the parent context.
+You can do this by overriding calling `inheritParentContext(false)` on the `Builder`.
 
 [[spring-cloud-feign-hystrix]]
 === Feign Hystrix Support
@@ -547,8 +576,10 @@ public interface DemoTemplate {
 }
 ----
 
+=== Reactive Support
+As the https://github.com/OpenFeign/feign[OpenFeign project] does not currently support reactive clients, such as https://docs.spring.io/spring/docs/current/javadoc-api/org/springframework/web/reactive/function/client/WebClient.html[Spring WebClient], neither does Spring Cloud OpenFeign. We will add support for it here as soon as it becomes available in the core project.
 
-=== Troubleshooting
+Until that is done, we recommend using https://github.com/Playtika/feign-reactive[feign-reactive] for Spring WebClient support.
 
 ==== Early Initialization Errors
 
